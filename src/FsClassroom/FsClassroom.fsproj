@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Network.fs" />
+    <Compile Include="Random.fs" />
+    <Compile Include="Sanitizer.fs" />
+    <Compile Include="Compiler.fs" />
+    <Compile Include="DB.fs" />
+    <Compile Include="Checker.fs" />
+    <Compile Include="Server.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FSharp.Compiler.Service" Version="34.1.0" />
+    <PackageReference Include="Suave" Version="2.5.6" />
+  </ItemGroup>
+
+</Project>
