@@ -62,7 +62,7 @@ let handleSubmission ctxt sid lastname token tmppath =
   match DB.findStudent ctxt sid with
   | None -> never
   | Some s ->
-    if s.LastName = lastname (* && token = DB.getToken ctxt *) then
+    if s.LastName = lastname && token = DB.getToken ctxt then
       processSubmission ctxt sid tmppath
     else never
 
