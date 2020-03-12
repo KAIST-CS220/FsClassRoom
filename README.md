@@ -24,3 +24,6 @@ implementation of the `myfunc` function. This function should be declared in a
 module `Namespace.M*`, where `*` is your student ID. This convention is
 important, otherwise, your submission will be rejected.
 
+```
+dotnet run --project src/Client -- http://SERVER_IP:8080/ <TOKEN> <STUDENT ID> <LAST NAME> <FS FILE>
+```
