@@ -45,7 +45,8 @@ let index = """
 </html>
 """
 
-let processSubmission ctxt sid tmppath =
+let processSubmission ctxt student tmppath =
+  let sid = DB.getSID student
   let submission = DB.log ctxt sid tmppath
   let moduleName = "M" + sid
   match Compiler.compileSubmission ctxt.LibDllPath submission with
@@ -56,14 +57,14 @@ let processSubmission ctxt sid tmppath =
     | Some t ->
       match t.GetMethods () |> Array.tryFind (fun m -> m.Name = "myfunc") with
       | None -> FORBIDDEN "Function not found.\n"
-      | Some m -> OK (Checker.check ctxt.TestDll m)
+      | Some m -> OK (Checker.check ctxt student m)
 
 let handleSubmission ctxt sid lastname token tmppath =
   match DB.findStudent ctxt sid with
   | None -> never
   | Some s ->
     if s.LastName = lastname && token = DB.getToken ctxt then
-      processSubmission ctxt sid tmppath
+      processSubmission ctxt s tmppath
     else never
 
 let submit ctxt (req: HttpRequest) =
@@ -99,6 +100,14 @@ let rec prompt ctxt (cts: CancellationTokenSource) =
   | "q" :: _ -> ()
   | "token" :: _ ->
     Console.WriteLine ("{0}", DB.getToken ctxt)
+    prompt ctxt cts
+  | "stat" :: _ ->
+    let totalSubmissions = ctxt.Submissions.Count
+    Console.WriteLine ("Total # of submissions: {0}", totalSubmissions)
+    ctxt.Submissions
+    |> Seq.countBy (fun (KeyValue (_, s)) -> s.Score)
+    |> Seq.iter (fun (score, cnt) ->
+      Console.WriteLine ("{0:F} => {1}", score, cnt))
     prompt ctxt cts
   | _ -> prompt ctxt cts
 

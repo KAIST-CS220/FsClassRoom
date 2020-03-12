@@ -5,6 +5,7 @@ module FsClassroom.DB
 
 open System.IO
 open System.Reflection
+open System.Collections.Generic
 
 type Student = {
   SID: string
@@ -13,7 +14,7 @@ type Student = {
 
 type Submission = {
   Submitter: Student
-  Code: string
+  Score: float
 }
 
 type Context = {
@@ -22,7 +23,7 @@ type Context = {
   LibDllPath: string
   TestDll: Assembly
   Students: Map<string, Student>
-  Submissions: Map<string, Submission list>
+  Submissions: Dictionary<string, Submission>
 }
 
 let [<Literal>] private dbdir = "db"
@@ -57,9 +58,11 @@ let init stime libfile testfile =
     LibDllPath = libpath
     TestDll = Assembly.LoadFile testpath
     Students = initStudents ()
-    Submissions = Map.empty }
+    Submissions = Dictionary () }
 
 let getToken ctxt = ctxt.Token
+
+let getSID student = student.SID
 
 let findStudent ctxt sid = Map.tryFind sid ctxt.Students
 
