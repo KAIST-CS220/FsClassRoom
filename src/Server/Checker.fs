@@ -24,13 +24,14 @@ let check (ctxt: DB.Context) student method =
             msgqueue.Enqueue ("Failed.")
         else ()
     let score = float succeed / float total
-    ctxt.Submissions.Add (student.SID, { Submitter = student; Score = score })
+    ctxt.Submissions.[student.SID] <- { Submitter = student; Score = score }
     msgqueue.Enqueue (
       succeed.ToString () + "/" + total.ToString () + " completed.")
     String.concat "\n" msgqueue
   with msg ->
-    ctxt.Submissions.Add (student.SID, { Submitter = student; Score = 0.0 })
+    ctxt.Submissions.[student.SID] <- { Submitter = student; Score = 0.0 }
     "[Error] " + msg.Message + "\n\n\
      This means your file cannot be compiled, or\n\
+     you have an invalid module name (maybe typo), or\n\
      your function has a wrong signature (parameter types are wrong).\n\n"
     + "[Log]\n\n" + String.concat "\n" msgqueue + "\n"
