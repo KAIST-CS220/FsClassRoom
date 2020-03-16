@@ -122,10 +122,20 @@ let startService ctxt =
   cts.Cancel ()
   Console.WriteLine ()
 
+let getContext libfile testfile sessionDir =
+  match sessionDir with
+  | Some sessionDir ->
+    printfn "Reload DB from %s" sessionDir
+    DB.reload libfile testfile sessionDir
+  | None ->
+    let startTime = DateTime.Now.ToString ("yyyy.MM.dd-H.mm.ss")
+    DB.init startTime libfile testfile
+
 [<EntryPoint>]
 let main args =
   let libfile, testfile = args.[0], args.[1]
-  let startTime = DateTime.Now.ToString ("yyyy.MM.dd-H.mm.ss")
-  let ctxt = DB.init startTime libfile testfile
+  let sessionDir = try Some args.[2] with _ -> None
+  let ctxt = getContext libfile testfile sessionDir
   startService ctxt
+  DB.close ctxt
   0

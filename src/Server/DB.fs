@@ -6,14 +6,22 @@ module FsClassroom.DB
 open System.IO
 open System.Reflection
 open System.Collections.Generic
+open System.Runtime.Serialization
+open System.Runtime.Serialization.Json
 
+[<DataContract>]
 type Student = {
+  [<field: DataMember(Name = "sid")>]
   SID: string
+  [<field: DataMember(Name = "lastname")>]
   LastName: string
 }
 
+[<DataContract>]
 type Submission = {
+  [<field: DataMember(Name = "submitter")>]
   Submitter: Student
+  [<field: DataMember(Name = "score")>]
   Score: float
 }
 
@@ -28,6 +36,8 @@ type Context = {
 
 let [<Literal>] private dbdir = "db"
 let [<Literal>] private studentfile = "students.csv"
+let [<Literal>] private studentdb = "students.db"
+let [<Literal>] private submissiondb = "submission.db"
 
 let private parseLine (line: string) =
   let arr = line.Split(',')
@@ -60,6 +70,38 @@ let init stime libfile testfile =
     Students = initStudents ()
     Submissions = Dictionary () }
 
+let assertDBExistence dbpath =
+  if File.Exists dbpath then ()
+  else failwith "Cannot reload: DB doesn't exist."
+
+let deserialize<'T> path =
+  use fs = File.OpenRead path
+  (new DataContractJsonSerializer(typeof<'T>)).ReadObject (fs) :?> 'T
+
+let deserializeStudents sessionDir =
+  let dbpath = Path.Combine (sessionDir, studentdb)
+  assertDBExistence dbpath
+  deserialize<Student []> dbpath
+  |> Array.fold (fun map s -> Map.add s.SID s map) Map.empty
+
+let deserializeSubmissions sessionDir =
+  let dbpath = Path.Combine (sessionDir, submissiondb)
+  let dict = Dictionary<string, Submission> ()
+  assertDBExistence dbpath
+  deserialize<Submission []> dbpath
+  |> Array.iter (fun s -> dict.[s.Submitter.SID] <- s)
+  dict
+
+let reload libfile testfile sessionDir =
+  Path.Combine (sessionDir, submissiondb) |> assertDBExistence
+  let libpath, testpath = Compiler.compileTest libfile testfile
+  { Token = Random.str 10
+    SessionDir = sessionDir
+    LibDllPath = libpath
+    TestDll = Assembly.LoadFile testpath
+    Students = deserializeStudents sessionDir
+    Submissions = deserializeSubmissions sessionDir }
+
 let getToken ctxt = ctxt.Token
 
 let getSID student = student.SID
@@ -79,3 +121,28 @@ let log ctxt sid tmpPath =
     let newPath = Path.Combine (ctxt.SessionDir, nextFile)
     File.Move (tmpPath, newPath)
     newPath
+
+let json<'T> (obj: 'T) =
+  use ms = new MemoryStream ()
+  (new DataContractJsonSerializer(typeof<'T>)).WriteObject(ms, obj)
+  ms.ToArray ()
+
+let writeStudentDB ctxt =
+  let dbpath = Path.Combine (ctxt.SessionDir, studentdb)
+  ctxt.Students
+  |> Seq.map (fun (KeyValue (_, student)) -> student)
+  |> Seq.toArray
+  |> json<Student []>
+  |> fun bs -> File.WriteAllBytes (dbpath, bs)
+
+let writeSubmissionDB ctxt =
+  let submissionpath = Path.Combine (ctxt.SessionDir, submissiondb)
+  ctxt.Submissions
+  |> Seq.map (fun (KeyValue (_, submission)) -> submission)
+  |> Seq.toArray
+  |> json<Submission []>
+  |> fun bs -> File.WriteAllBytes (submissionpath, bs)
+
+let close ctxt =
+  writeStudentDB ctxt
+  writeSubmissionDB ctxt
