@@ -53,10 +53,10 @@ let processSubmission ctxt student tmppath =
   | Error msg -> FORBIDDEN msg
   | Ok asm ->
     match asm.GetTypes () |> Array.tryFind (fun t -> t.Name = moduleName) with
-    | None -> FORBIDDEN "Module not found.\n"
+    | None -> FORBIDDEN "Module not found (typo in your module?).\n"
     | Some t ->
       match t.GetMethods () |> Array.tryFind (fun m -> m.Name = "myfunc") with
-      | None -> FORBIDDEN "Function not found.\n"
+      | None -> FORBIDDEN "Function not found (typo in your function?).\n"
       | Some m -> OK (Checker.check ctxt student m)
 
 let handleSubmission ctxt sid lastname token tmppath =
@@ -100,6 +100,18 @@ let rec prompt ctxt (cts: CancellationTokenSource) =
   | "q" :: _ -> ()
   | "token" :: _ ->
     Console.WriteLine ("{0}", DB.getToken ctxt)
+    prompt ctxt cts
+  | "lower" :: score :: _ ->
+    ctxt.Submissions
+    |> Seq.filter (fun (KeyValue (_, s)) -> s.Score <= float score)
+    |> Seq.iter (fun (KeyValue (_, s)) ->
+      Console.WriteLine ("{0}: {1:F}", s.Submitter.SID, s.Score))
+    prompt ctxt cts
+  | "higher" :: score :: _ ->
+    ctxt.Submissions
+    |> Seq.filter (fun (KeyValue (_, s)) -> s.Score >= float score)
+    |> Seq.iter (fun (KeyValue (_, s)) ->
+      Console.WriteLine ("{0}: {1:F}", s.Submitter.SID, s.Score))
     prompt ctxt cts
   | "stat" :: _ ->
     let totalSubmissions = ctxt.Submissions.Count
