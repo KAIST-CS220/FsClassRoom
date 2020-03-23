@@ -1,40 +1,75 @@
+<!DOCTYPE html>
 <html>
 <head>
-  <title>F# Classroom</title>
-  <script src="http://code.jquery.com/jquery-latest.js"></script>
+    <title>F# Classroom</title>
 </head>
 <body>
-  <form action="submit" method="post" enctype="multipart/form-data">
-    <label>
-      Student ID:
-      <input type="text" name="sid"/>
-    </label>
-    <br/>
-    <label>
-      Last Name:
-      <input type="text" name="lastname"/>
-    </label>
-    <br/>
-    <label>
-      Token:
-      <input type="text" name="token"/>
-    </label>
-    <br/>
-    <label>
-      <input type="file" name="code"/>
-    </label>
-    <br/>
-    <input type="submit"/>
-  </form>
-  <script>
-  $("form").submit(function() {
-    const token = $("input[name='token']").val();
-    if (token.includes(" ")) {
-      alert("Token has a whitespace! Please check again");
-      return false;
-    }
-    return true;
-  });
-  </script>
+    <form id="frm_submit" action="submit" method="post" enctype="multipart/form-data">
+        <label for="sid">
+            Student ID:
+        </label>
+        <input type="text" id="sid" name="sid" required/>
+        <br/>
+
+        <label for="lastname">
+            Last Name:
+        </label>
+        <input type="text" id="lastname" name="lastname" required/>
+        <br/>
+
+        <label for="token">
+            Token:
+        </label>
+        <input type="text" id="token" name="token" required/>
+        <br/>
+
+        <label for="code">
+            Your code:
+        </label>
+        <input type="file" id="code" name="code" required/>
+        <br/>
+
+        <input type="submit"/>
+    </form>
+    <script src="http://code.jquery.com/jquery-latest.js"></script>
+    <script>
+        function _trim(obj) {
+            obj.val(obj.val().trim());
+        }
+        function _validate() {
+            let _sid = $("#sid").val();
+            let _code = $("#code").val().split("\\").pop();
+
+            if(!/20[0-9]{6}/.test(_sid)) {
+                alert("Wrong student id");
+                return -1;
+            }
+            if(_code.toLowerCase !== "myfunc.fs") {
+                if(confirm(`You're trying to submit ${_code}\nYou might submit myfunc.fs\nIs it sure?`)) {
+                    return 0;
+                } else {
+                    return -1;
+                }
+            }
+            return 0;
+        }
+        function _submit() {
+            _trim($("#sid"));
+            _trim($("#lastname"));
+            _trim($("#token"));
+
+            if(!$("#sid").val() || !$("#lastname").val() || !$("#token").val() || !$("#code").val()){
+                alert("There are missing fields!");
+                return false;
+            }
+
+            return _validate() === 0;
+        }
+        $(function() {
+            //Trim all inputs
+            $("input[type=text]").on("change keyup paste", function() { _trim($(this)); });
+            $("#frm_submit").submit(_submit);
+        });
+    </script>
 </body>
 </html>
