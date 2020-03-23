@@ -1,0 +1,40 @@
+<html>
+<head>
+  <title>F# Classroom</title>
+  <script src="http://code.jquery.com/jquery-latest.js"></script>
+</head>
+<body>
+  <form action="submit" method="post" enctype="multipart/form-data">
+    <label>
+      Student ID:
+      <input type="text" name="sid"/>
+    </label>
+    <br/>
+    <label>
+      Last Name:
+      <input type="text" name="lastname"/>
+    </label>
+    <br/>
+    <label>
+      Token:
+      <input type="text" name="token"/>
+    </label>
+    <br/>
+    <label>
+      <input type="file" name="code"/>
+    </label>
+    <br/>
+    <input type="submit"/>
+  </form>
+  <script>
+  $("form").submit(function() {
+    const token = $("input[name='token']").val();
+    if (token.includes(" ")) {
+      alert("Token has a whitespace! Please check again");
+      return false;
+    }
+    return true;
+  });
+  </script>
+</body>
+</html>
