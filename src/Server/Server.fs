@@ -9,41 +9,12 @@ open Suave.Operators
 open Suave.Successful
 open Suave.RequestErrors
 open System
+open System.IO
 open System.Threading
 
 let [<Literal>] myport = 8080
 
-let index = """
-<html>
-<head>
-  <title>F# Classroom</title>
-</head>
-<body>
-  <form action="submit" method="post" enctype="multipart/form-data">
-    <label>
-      Student ID:
-      <input type="text" name="sid"/>
-    </label>
-    <br/>
-    <label>
-      Last Name:
-      <input type="text" name="lastname"/>
-    </label>
-    <br/>
-    <label>
-      Token:
-      <input type="text" name="token"/>
-    </label>
-    <br/>
-    <label>
-      <input type="file" name="code"/>
-    </label>
-    <br/>
-    <input type="submit"/>
-  </form>
-</body>
-</html>
-"""
+let index = File.ReadAllText "index.html"
 
 let processSubmission ctxt student tmppath =
   let sid = DB.getSID student
