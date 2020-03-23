@@ -40,12 +40,12 @@
             let _sid = $("#sid").val();
             let _code = $("#code").val().split("\\").pop();
 
-            if(!/20[0-9]{6}/.test(_sid)) {
+            if(!/[0-9]{8}/.test(_sid)) {
                 alert("Wrong student id");
                 return -1;
             }
             if(_code.toLowerCase !== "myfunc.fs") {
-                if(confirm(`You're trying to submit ${_code}\nYou might submit myfunc.fs\nIs it sure?`)) {
+                if(confirm(`You're trying to submit ${_code}\nAre you sure?`)) {
                     return 0;
                 } else {
                     return -1;
