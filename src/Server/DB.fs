@@ -54,8 +54,10 @@ let private initSessionDir stime =
   |> fun info -> info.FullName
 
 let private initStudents () =
-  Path.Combine (dbdir, studentfile)
-  |> File.ReadLines
+  let dir = Path.Combine (dbdir, studentfile)
+  if Directory.Exists dir |> not then
+    failwith "Cannot load: students.csv doesn't exist."
+  dir |> File.ReadLines
   |> Seq.fold (fun m line ->
                let lastname, sid = parseLine line
                Map.add sid { SID = sid; LastName = lastname } m) Map.empty
