@@ -40,5 +40,7 @@ let run libPath (submissionPath: string) (checker: FSharpChecker) =
 let compileSubmission libPath submissionPath =
   let checker = FSharpChecker.Create ()
   if Sanitizer.sanitize submissionPath checker then
-    Error "Sanitization failed. Are you using 'System' module?\n"
+    "Sanitization failed. The following identifiers are banned: "
+    + (Sanitizer.unsafe |> String.concat ", ")
+    + "\n" |> Error
   else run libPath submissionPath checker
