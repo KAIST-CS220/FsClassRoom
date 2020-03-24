@@ -14,7 +14,12 @@ open System.Threading
 
 let [<Literal>] myport = 8080
 
-let index = File.ReadAllText "index.html"
+let index =
+  let dir =
+    (Uri (Reflection.Assembly.GetExecutingAssembly().CodeBase)).AbsolutePath
+    |> Path.GetDirectoryName
+  Path.Combine (dir, "index.html")
+  |> File.ReadAllText
 
 let processSubmission ctxt student tmppath =
   let sid = DB.getSID student
@@ -63,8 +68,10 @@ let getConfig ip port token =
       listenTimeout = TimeSpan.FromMilliseconds 3000. }
 
 let rec prompt ctxt (cts: CancellationTokenSource) =
-  Console.Write ("{0} > ",
-    (if cts.IsCancellationRequested then "(no connection)" else ""))
+  let now = DateTime.Now
+  Console.Write ("{0} {1} > ",
+    (if cts.IsCancellationRequested then "(no connection)" else ""),
+    now.ToString())
   match Console.ReadLine () |> String.split ' ' with
   | "stop" :: _ -> cts.Cancel (); prompt ctxt cts
   | "quit" :: _

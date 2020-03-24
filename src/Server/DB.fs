@@ -55,7 +55,7 @@ let private initSessionDir stime =
 
 let private initStudents () =
   let dir = Path.Combine (dbdir, studentfile)
-  if Directory.Exists dir |> not then
+  if File.Exists dir |> not then
     failwith "Cannot load: students.csv doesn't exist."
   dir |> File.ReadLines
   |> Seq.fold (fun m line ->
