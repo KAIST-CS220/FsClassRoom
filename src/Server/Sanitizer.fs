@@ -8,15 +8,17 @@ open FSharp.Compiler.Text
 open FSharp.Compiler.Ast
 open FSharp.Compiler.SourceCodeServices
 
-let isLongIdentIncludeSystem (ident: LongIdent) =
-  ident |> Seq.exists (fun i -> i.idText = "System")
+let unsafe = ["System"; "NativePtr"]
+
+let isLongIdentIncludeUnsafe (ident: LongIdent) =
+  ident |> Seq.exists (fun i -> List.contains i.idText unsafe)
 
 let rec visitExpr = function
   | SynExpr.App (_, _, f, arg, _) ->
     visitExpr f
     || visitExpr arg
   | SynExpr.LongIdent (_, LongIdentWithDots (ident, _), _, _) ->
-    ident |> isLongIdentIncludeSystem
+    ident |> isLongIdentIncludeUnsafe
   | SynExpr.Match (_, e, clauses, _) ->
     visitExpr e
     || clauses |> List.fold (fun acc (Clause (_, wh, e, _, _)) ->
@@ -58,11 +60,11 @@ let rec sanitizeDecls (decls: SynModuleDecls) =
       |> List.forall (fun (Binding (_, _, _, _, _, _, _, _, _, e, _, _)) ->
         visitExpr e)
     | SynModuleDecl.ModuleAbbrev (_, ident, _) ->
-      ident |> isLongIdentIncludeSystem
+      ident |> isLongIdentIncludeUnsafe
     | SynModuleDecl.NestedModule (_, _, decls, _, _) ->
       sanitizeDecls decls
     | SynModuleDecl.Open (LongIdentWithDots (ident, _), _) ->
-      ident |> isLongIdentIncludeSystem
+      ident |> isLongIdentIncludeUnsafe
     | _ -> false)
 
 let sanitizeModule = function
