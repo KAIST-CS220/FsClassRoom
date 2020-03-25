@@ -38,6 +38,7 @@ let [<Literal>] private dbdir = "db"
 let [<Literal>] private studentfile = "students.csv"
 let [<Literal>] private studentdb = "students.db"
 let [<Literal>] private submissiondb = "submission.db"
+let [<Literal>] private resultsfile = "results.csv"
 
 let private parseLine (line: string) =
   let arr = line.Split(',')
@@ -145,6 +146,17 @@ let writeSubmissionDB ctxt =
   |> json<Submission []>
   |> fun bs -> File.WriteAllBytes (submissionpath, bs)
 
+let writeResults ctxt =
+  let path = Path.Combine (ctxt.SessionDir, resultsfile)
+  use f = File.CreateText (path)
+  ctxt.Submissions
+  |> Seq.iter (fun (KeyValue (_, submission)) ->
+    let line = submission.Submitter.SID
+    let line = line + ","
+    let line = line + submission.Score.ToString ("0.00")
+    f.WriteLine (line))
+
 let close ctxt =
   writeStudentDB ctxt
   writeSubmissionDB ctxt
+  writeResults ctxt
