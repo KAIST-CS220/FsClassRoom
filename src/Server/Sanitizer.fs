@@ -23,8 +23,7 @@ let isTypeInheritUnsafe = function
 let rec visitExpr = function
   // Application
   | SynExpr.App (_, _, f, arg, _) ->
-    visitExpr f
-    || visitExpr arg
+    visitExpr f || visitExpr arg
 
   // Long Identifier
   | SynExpr.LongIdent (_, LongIdentWithDots (ident, _), _, _) ->
@@ -34,9 +33,9 @@ let rec visitExpr = function
   | SynExpr.Match (_, e, clauses, _)
   | SynExpr.MatchBang (_, e, clauses, _) ->
     visitExpr e
-    || clauses |> List.fold visitClause false
+    || clauses |> List.exists visitClause
   | SynExpr.MatchLambda (_, _, clauses, _, _) ->
-    clauses |> List.fold visitClause false // Maybe List.exists?
+    clauses |> List.exists visitClause
 
   // If-Then-Else expression
   | SynExpr.IfThenElse (g, t, f, _, _, _, _) ->
@@ -46,9 +45,7 @@ let rec visitExpr = function
 
   // Let/Use expression
   | SynExpr.LetOrUse (_, _, bindings, body, _) ->
-    bindings
-    |> List.forall (fun (Binding (_, _, _, _, _, _, _, _, _, e, _, _)) -> // Why is this forall?
-      visitExpr e)
+    bindings |> List.exists visitBinding
     || visitExpr body
   | SynExpr.LetOrUseBang (_, _, _, _, rhs, _, body, _) ->
     visitExpr rhs || visitExpr body
@@ -78,17 +75,14 @@ let rec visitExpr = function
     visitExpr t || visitExpr f
   | SynExpr.TryWith(body, _, cases, _, _, _, _) ->
     visitExpr body
-    || cases |> List.fold visitClause false
+    || cases |> List.exists visitClause
 
   // Get/Set expressions
-  | SynExpr.Set (id, e, _) ->
-    visitExpr id || visitExpr e
-  | SynExpr.LongIdentSet (LongIdentWithDots (ident, _), e, _) ->
-    ident |> isLongIdentIncludeUnsafe
-    || visitExpr e
-  | SynExpr.NamedIndexedPropertySet (LongIdentWithDots (ident, _), i, e, _) ->
-    ident |> isLongIdentIncludeUnsafe
-    || visitExpr i || visitExpr e
+  | SynExpr.Set (_, e, _)
+  | SynExpr.LongIdentSet (_, e, _) ->
+    visitExpr e
+  | SynExpr.NamedIndexedPropertySet (LongIdentWithDots (_, _), i, e, _) ->
+    visitExpr i || visitExpr e
   | SynExpr.DotGet (e, _, _, _) ->
     visitExpr e
   | SynExpr.DotIndexedGet (e, indices, _, _) ->
@@ -115,9 +109,9 @@ let rec visitExpr = function
   | SynExpr.ObjExpr (pType, opt, bindings, impls, _, _) ->
     pType |> isTypeInheritUnsafe
     || (match opt with | Some (e, _) -> visitExpr e | None -> false)
-    || bindings |> List.forall visitBinding
+    || bindings |> List.exists visitBinding
     || impls |> List.exists (fun (InterfaceImpl(_, bindings, _)) ->
-      bindings |> List.forall visitBinding)
+      bindings |> List.exists visitBinding)
 
   // Wrapped cases
   | SynExpr.Paren (e, _, _, _)
@@ -142,9 +136,8 @@ let rec visitExpr = function
 and visitBinding = fun (Binding (_, _, _, _, _, _, _, _, _, e, _, _)) ->
   visitExpr e
 
-and visitClause = fun acc (Clause (_, wh, e, _, _)) ->
-  acc
-  || visitExpr e
+and visitClause = fun (Clause (_, wh, e, _, _)) ->
+  visitExpr e
   || (match wh with | Some e -> visitExpr e | None -> false)
 
 and visitIndex = function
@@ -162,7 +155,7 @@ let rec sanitizeMembers (defns : SynMemberDefns) =
       | SynMemberDefn.Member (binding, _) ->
         visitBinding binding
       | SynMemberDefn.LetBindings (bindings, _, _, _) ->
-        bindings |> List.forall visitBinding
+        bindings |> List.exists visitBinding
       | SynMemberDefn.Interface (_, def, _) ->
         (match def with | Some def -> sanitizeMembers def | None -> false)
       | SynMemberDefn.Inherit (pType, _, _) ->
@@ -178,7 +171,7 @@ let rec sanitizeDecls (decls: SynModuleDecls) =
     match decl with
     | SynModuleDecl.DoExpr (_, e, _) -> visitExpr e
     | SynModuleDecl.Let (_, bindings, _) ->
-      bindings |> List.forall visitBinding
+      bindings |> List.exists visitBinding
     | SynModuleDecl.ModuleAbbrev (_, ident, _) ->
       ident |> isLongIdentIncludeUnsafe
     | SynModuleDecl.NestedModule (_, _, decls, _, _) ->
@@ -190,9 +183,7 @@ let rec sanitizeDecls (decls: SynModuleDecls) =
         sanitizeMembers members)
     | SynModuleDecl.NamespaceFragment (SynModuleOrNamespace (ident, _, _, decls, _, _, _, _)) ->
       ident |> isLongIdentIncludeUnsafe || sanitizeDecls decls
-    | SynModuleDecl.Exception (_)
-    | SynModuleDecl.Attributes (_)
-    | SynModuleDecl.HashDirective (_) -> false)
+    | _ -> false)
 
 let sanitizeModule = function
   | SynModuleOrNamespace (_, _, _, decls, _, _, _, _) -> sanitizeDecls decls
