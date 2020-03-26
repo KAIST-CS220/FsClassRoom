@@ -23,7 +23,8 @@ let isTypeInheritUnsafe = function
 let rec visitExpr = function
   // Application
   | SynExpr.App (_, _, f, arg, _) ->
-    visitExpr f || visitExpr arg
+    visitExpr f
+    || visitExpr arg
 
   // Long Identifier
   | SynExpr.LongIdent (_, LongIdentWithDots (ident, _), _, _) ->
@@ -81,7 +82,7 @@ let rec visitExpr = function
   | SynExpr.Set (_, e, _)
   | SynExpr.LongIdentSet (_, e, _) ->
     visitExpr e
-  | SynExpr.NamedIndexedPropertySet (LongIdentWithDots (_, _), i, e, _) ->
+  | SynExpr.NamedIndexedPropertySet (_, i, e, _) ->
     visitExpr i || visitExpr e
   | SynExpr.DotGet (e, _, _, _) ->
     visitExpr e
@@ -158,6 +159,9 @@ let rec sanitizeMembers (defns : SynMemberDefns) =
         bindings |> List.exists visitBinding
       | SynMemberDefn.Interface (_, def, _) ->
         (match def with | Some def -> sanitizeMembers def | None -> false)
+      | SynMemberDefn.ImplicitInherit (pType, args, _, _) ->
+        pType |> isTypeInheritUnsafe
+        || visitExpr args
       | SynMemberDefn.Inherit (pType, _, _) ->
         pType |> isTypeInheritUnsafe
       | SynMemberDefn.AutoProperty (_, _, _, _, _, _, _, _, e, _, _) ->
