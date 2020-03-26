@@ -31,9 +31,12 @@ let processSubmission ctxt student tmppath =
     match asm.GetTypes () |> Array.tryFind (fun t -> t.Name = moduleName) with
     | None -> FORBIDDEN "Module not found (typo in your module?).\n"
     | Some t ->
-      match t.GetMethods () |> Array.tryFind (fun m -> m.Name = "myfunc") with
-      | None -> FORBIDDEN "Function not found (typo in your function?).\n"
-      | Some m -> OK (Checker.check ctxt student m)
+      if t.Namespace <> ctxt.ActivityName then
+        FORBIDDEN "Invalid module namespace (typo in your module?).\n"
+      else
+        match t.GetMethods () |> Array.tryFind (fun m -> m.Name = "myfunc") with
+        | None -> FORBIDDEN "Function not found (typo in your function?).\n"
+        | Some m -> OK (Checker.check ctxt student m)
 
 let handleSubmission ctxt sid lastname token tmppath =
   match DB.findStudent ctxt sid with
