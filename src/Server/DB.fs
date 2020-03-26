@@ -74,7 +74,7 @@ let init stime libfile testfile =
     TestDll = testDll
     Students = initStudents ()
     Submissions = Dictionary ()
-    ActivityName = testDll.GetTypes().[0].Namespace}
+    ActivityName = testDll.GetTypes().[0].Namespace }
 
 let assertDBExistence dbpath =
   if File.Exists dbpath then ()
