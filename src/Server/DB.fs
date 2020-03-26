@@ -32,6 +32,7 @@ type Context = {
   TestDll: Assembly
   Students: Map<string, Student>
   Submissions: Dictionary<string, Submission>
+  ActivityName: string
 }
 
 let [<Literal>] private dbdir = "db"
@@ -66,12 +67,14 @@ let private initStudents () =
 let init stime libfile testfile =
   initDBDir ()
   let libpath, testpath = Compiler.compileTest libfile testfile
+  let testDll = Assembly.LoadFile testpath
   { Token = Random.str 10
     SessionDir = initSessionDir stime
     LibDllPath = libpath
-    TestDll = Assembly.LoadFile testpath
+    TestDll = testDll
     Students = initStudents ()
-    Submissions = Dictionary () }
+    Submissions = Dictionary ()
+    ActivityName = testDll.GetTypes().[0].Namespace }
 
 let assertDBExistence dbpath =
   if File.Exists dbpath then ()
@@ -98,12 +101,14 @@ let deserializeSubmissions sessionDir =
 let reload libfile testfile sessionDir =
   Path.Combine (sessionDir, submissiondb) |> assertDBExistence
   let libpath, testpath = Compiler.compileTest libfile testfile
+  let testDll = Assembly.LoadFile testpath;
   { Token = Random.str 10
     SessionDir = sessionDir
     LibDllPath = libpath
-    TestDll = Assembly.LoadFile testpath
+    TestDll = testDll
     Students = deserializeStudents sessionDir
-    Submissions = deserializeSubmissions sessionDir }
+    Submissions = deserializeSubmissions sessionDir
+    ActivityName = testDll.GetTypes().[0].Namespace }
 
 let getToken ctxt = ctxt.Token
 
