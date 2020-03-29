@@ -16,7 +16,7 @@ let [<Literal>] myport = 8080
 
 let index =
   let dir =
-    (Uri (Reflection.Assembly.GetExecutingAssembly().CodeBase)).AbsolutePath
+    Path.GetFullPath (Reflection.Assembly.GetExecutingAssembly().Location)
     |> Path.GetDirectoryName
   Path.Combine (dir, "index.html")
   |> File.ReadAllText
