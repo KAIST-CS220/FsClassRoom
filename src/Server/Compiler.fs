@@ -23,19 +23,13 @@ let compileTest libFilePath testFilePath =
   else printfn "%A" info; failwith "Failed to compile test file."
 
 let run libPath (submissionPath: string) (checker: FSharpChecker) =
-  let dllpath = Path.GetFileName submissionPath + ".dll"
+  let dir = Path.GetDirectoryName submissionPath
+  let filename = Path.ChangeExtension (Path.GetFileName submissionPath, "dll")
+  let dllpath = Path.Combine (dir, filename)
   let opts = [| "fsc.exe"; "-o"; dllpath; "-r"; libPath; "-a"; submissionPath |]
-  let err, _, asm =
-    checker.CompileToDynamicAssembly (opts, None)
-    |> Async.RunSynchronously
-  match asm with
-  | Some asm -> Ok asm
-  | None ->
-    err |> Array.fold (fun acc inf ->
-      acc
-      + "(" + inf.StartLineAlternate.ToString ()
-      + "," + (inf.StartColumn + 1).ToString ()
-      + ") " + inf.Message + "\n") "" |> Error
+  let info, _ = checker.Compile (opts) |> Async.RunSynchronously
+  if info.Length = 0 then Ok dllpath
+  else Error <| info.ToString ()
 
 let compileSubmission libPath submissionPath =
   let checker = FSharpChecker.Create ()

@@ -11,7 +11,6 @@
     <Compile Include="Sanitizer.fs" />
     <Compile Include="Compiler.fs" />
     <Compile Include="DB.fs" />
-    <Compile Include="Checker.fs" />
     <Compile Include="Server.fs" />
     <None Include="index.html" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>

@@ -10,16 +10,48 @@ open Suave.Successful
 open Suave.RequestErrors
 open System
 open System.IO
+open System.IO.Pipes
 open System.Threading
+open System.Diagnostics
 
 let [<Literal>] myport = 8080
 
+let bindir =
+  (Uri (Reflection.Assembly.GetExecutingAssembly().CodeBase)).AbsolutePath
+  |> Path.GetDirectoryName
+
 let index =
-  let dir =
-    (Uri (Reflection.Assembly.GetExecutingAssembly().CodeBase)).AbsolutePath
-    |> Path.GetDirectoryName
-  Path.Combine (dir, "index.html")
+  Path.Combine (bindir, "index.html")
   |> File.ReadAllText
+
+let checkerPath =
+  Path.Combine (bindir, "../../../../Checker")
+
+let forkChild (ctxt: DB.Context) student sid dllpath moduleName =
+  use p = new Process ()
+  use srv =
+    new AnonymousPipeServerStream (PipeDirection.In,
+                                   HandleInheritability.Inheritable)
+  p.StartInfo.FileName <- "dotnet"
+  p.StartInfo.Arguments <-
+    "run --project " + checkerPath + " -- "
+    + srv.GetClientHandleAsString ()
+    + " \"" + dllpath + "\""
+    + " \"" + moduleName + "\""
+    + " \"" + ctxt.ActivityName + "\""
+    + " \"" + ctxt.TestDllPath + "\""
+  p.StartInfo.UseShellExecute <- false
+  p.Start () |> ignore
+  srv.DisposeLocalCopyOfClientHandle ()
+  try
+    use sr = new StreamReader (srv)
+    p.WaitForExit ()
+    p.Close ()
+    let score = sr.ReadLine () |> float
+    ctxt.Submissions.[sid] <- { Submitter = student; Score = score }
+    sr.ReadToEnd ()
+  with e ->
+    "[Fatal Error] " + e.ToString ()
 
 let processSubmission ctxt student tmppath =
   let sid = DB.getSID student
@@ -27,16 +59,9 @@ let processSubmission ctxt student tmppath =
   let moduleName = "M" + sid
   match Compiler.compileSubmission ctxt.LibDllPath submission with
   | Error msg -> FORBIDDEN msg
-  | Ok asm ->
-    match asm.GetTypes () |> Array.tryFind (fun t -> t.Name = moduleName) with
-    | None -> FORBIDDEN "Module not found (typo in your module?).\n"
-    | Some t ->
-      if t.Namespace <> ctxt.ActivityName then
-        FORBIDDEN "Invalid module namespace (typo in your module?).\n"
-      else
-        match t.GetMethods () |> Array.tryFind (fun m -> m.Name = "myfunc") with
-        | None -> FORBIDDEN "Function not found (typo in your function?).\n"
-        | Some m -> OK (Checker.check ctxt student m)
+  | Ok dllpath ->
+    let res = forkChild ctxt student sid dllpath moduleName
+    OK (res)
 
 let handleSubmission ctxt sid lastname token tmppath =
   match DB.findStudent ctxt sid with
@@ -118,6 +143,7 @@ let startService ctxt =
 let getContext libfile testfile sessionDir =
   match sessionDir with
   | Some sessionDir ->
+    let sessionDir = Path.GetFullPath sessionDir
     printfn "Reload DB from %s" sessionDir
     DB.reload libfile testfile sessionDir
   | None ->
