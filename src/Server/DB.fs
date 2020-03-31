@@ -30,6 +30,7 @@ type Context = {
   SessionDir: string
   LibDllPath: string
   TestDllPath: string
+  CheckerDllPath: string
   Students: Map<string, Student>
   Submissions: Dictionary<string, Submission>
   ActivityName: string
@@ -64,7 +65,7 @@ let private initStudents () =
                let lastname, sid = parseLine line
                Map.add sid { SID = sid; LastName = lastname } m) Map.empty
 
-let init stime libfile testfile =
+let init stime libfile testfile checker =
   initDBDir ()
   let libpath, testpath = Compiler.compileTest libfile testfile
   let testDll = Assembly.LoadFile testpath
@@ -72,6 +73,7 @@ let init stime libfile testfile =
     SessionDir = initSessionDir stime
     LibDllPath = libpath
     TestDllPath = testpath
+    CheckerDllPath = checker
     Students = initStudents ()
     Submissions = Dictionary ()
     ActivityName = testDll.GetTypes().[0].Namespace }
@@ -98,7 +100,7 @@ let deserializeSubmissions sessionDir =
   |> Array.iter (fun s -> dict.[s.Submitter.SID] <- s)
   dict
 
-let reload libfile testfile sessionDir =
+let reload libfile testfile checker sessionDir =
   Path.Combine (sessionDir, submissiondb) |> assertDBExistence
   let libpath, testpath = Compiler.compileTest libfile testfile
   let testDll = Assembly.LoadFile testpath
@@ -106,6 +108,7 @@ let reload libfile testfile sessionDir =
     SessionDir = sessionDir
     LibDllPath = libpath
     TestDllPath = testpath
+    CheckerDllPath = checker
     Students = deserializeStudents sessionDir
     Submissions = deserializeSubmissions sessionDir
     ActivityName = testDll.GetTypes().[0].Namespace }

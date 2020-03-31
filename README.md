@@ -14,7 +14,7 @@ functions in a namespace, and the test driver file contains a series of test
 functions, each of which invokes the implementation of `myfunc` to test it.
 
 ```
-dotnet run --project src/Server -- activities/Lib.fs activities/Tests.fs
+dotnet run --project src/Server -- activities/Lib.fs activities/Tests.fs Checker.dll
 ```
 
 ### Client

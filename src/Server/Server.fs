@@ -24,9 +24,6 @@ let index =
   Path.Combine (bindir, "index.html")
   |> File.ReadAllText
 
-let checkerPath =
-  Path.Combine (bindir, "../../../../Checker")
-
 let forkChild (ctxt: DB.Context) student sid dllpath moduleName =
   use p = new Process ()
   use srv =
@@ -34,8 +31,8 @@ let forkChild (ctxt: DB.Context) student sid dllpath moduleName =
                                    HandleInheritability.Inheritable)
   p.StartInfo.FileName <- "dotnet"
   p.StartInfo.Arguments <-
-    "run --project " + checkerPath + " -- "
-    + srv.GetClientHandleAsString ()
+    ctxt.CheckerDllPath
+    + " " + srv.GetClientHandleAsString ()
     + " \"" + dllpath + "\""
     + " \"" + moduleName + "\""
     + " \"" + ctxt.ActivityName + "\""
@@ -140,21 +137,24 @@ let startService ctxt =
   cts.Cancel ()
   Console.WriteLine ()
 
-let getContext libfile testfile sessionDir =
+let getContext libfile testfile checker sessionDir =
+  let checker =
+    if File.Exists checker then Path.GetFullPath checker
+    else failwith "Checker.dll should be given."
   match sessionDir with
   | Some sessionDir ->
     let sessionDir = Path.GetFullPath sessionDir
     printfn "Reload DB from %s" sessionDir
-    DB.reload libfile testfile sessionDir
+    DB.reload libfile testfile checker sessionDir
   | None ->
     let startTime = DateTime.Now.ToString ("yyyy.MM.dd-H.mm.ss")
-    DB.init startTime libfile testfile
+    DB.init startTime libfile testfile checker
 
 [<EntryPoint>]
 let main args =
-  let libfile, testfile = args.[0], args.[1]
-  let sessionDir = try Some args.[2] with _ -> None
-  let ctxt = getContext libfile testfile sessionDir
+  let libfile, testfile, checker = args.[0], args.[1], args.[2]
+  let sessionDir = try Some args.[3] with _ -> None
+  let ctxt = getContext libfile testfile checker sessionDir
   startService ctxt
   DB.close ctxt
   0
