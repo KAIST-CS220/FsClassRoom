@@ -41,7 +41,18 @@ let main argv =
   let moduleName = argv.[2]
   let activityName = argv.[3]
   let testDllPath = argv.[4]
+  let libDir = Path.GetDirectoryName testDllPath
+  let libDllPath = Path.Combine (libDir, "Lib.dll")
+  let _lib = Assembly.LoadFile (libDllPath)
   let test = Assembly.LoadFile (testDllPath)
+  System.AppDomain.CurrentDomain.add_AssemblyResolve (
+    System.ResolveEventHandler (fun _ args ->
+      let asm =
+        System.AppDomain.CurrentDomain.GetAssemblies ()
+        |> Array.tryFind (fun loaded ->
+          args.Name = loaded.FullName
+          || args.Name = loaded.GetName().Name)
+      defaultArg asm null))
   let myfunc = Assembly.LoadFile (myfuncDllPath)
   async { do! Async.Sleep (3000) (* Maximum 3 sec. *)
           do System.Environment.Exit(1) } |> Async.Start
