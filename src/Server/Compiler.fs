@@ -29,7 +29,14 @@ let run libPath (submissionPath: string) (checker: FSharpChecker) =
   let opts = [| "fsc.exe"; "-o"; dllpath; "-r"; libPath; "-a"; submissionPath |]
   let info, _ = checker.Compile (opts) |> Async.RunSynchronously
   if info.Length = 0 then Ok dllpath
-  else Error <| info.ToString ()
+  else
+    info
+    |> Array.fold (fun s i ->
+      s
+      + "Error: "
+      + "(" + i.StartLineAlternate.ToString () + "," + i.StartColumn.ToString () + ") "
+      + i.Message + "\n") ""
+    |> Error
 
 let compileSubmission libPath submissionPath =
   let checker = FSharpChecker.Create ()

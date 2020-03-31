@@ -24,6 +24,14 @@ let index =
   Path.Combine (bindir, "index.html")
   |> File.ReadAllText
 
+let updateScore (ctxt: DB.Context) student sid score =
+  if ctxt.Submissions.ContainsKey sid then
+    if ctxt.Submissions.[sid].Score < score then
+      ctxt.Submissions.[sid] <- { Submitter = student; Score = score }
+    else ()
+  else
+    ctxt.Submissions.[sid] <- { Submitter = student; Score = score }
+
 let forkChild (ctxt: DB.Context) student sid dllpath moduleName =
   use p = new Process ()
   use srv =
@@ -45,9 +53,10 @@ let forkChild (ctxt: DB.Context) student sid dllpath moduleName =
     p.WaitForExit ()
     p.Close ()
     let score = sr.ReadLine () |> float
-    ctxt.Submissions.[sid] <- { Submitter = student; Score = score }
+    updateScore ctxt student sid score
     sr.ReadToEnd ()
   with e ->
+    updateScore ctxt student sid 0.0
     "[Fatal Error] " + e.ToString ()
 
 let processSubmission ctxt student tmppath =
@@ -55,7 +64,9 @@ let processSubmission ctxt student tmppath =
   let submission = DB.log ctxt sid tmppath
   let moduleName = "M" + sid
   match Compiler.compileSubmission ctxt.LibDllPath submission with
-  | Error msg -> FORBIDDEN msg
+  | Error msg ->
+    updateScore ctxt student sid 0.0
+    FORBIDDEN msg
   | Ok dllpath ->
     let res = forkChild ctxt student sid dllpath moduleName
     OK (res)
