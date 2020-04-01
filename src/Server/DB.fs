@@ -4,6 +4,7 @@
 module FsClassroom.DB
 
 open System.IO
+open System.Text.RegularExpressions
 open System.Reflection
 open System.Collections.Generic
 open System.Runtime.Serialization
@@ -36,6 +37,9 @@ type Context = {
   ActivityName: string
 }
 
+let private rxSID = new Regex ("^20[0-2][0-9]{5}$", RegexOptions.Compiled)
+let private rxLastName = new Regex ("^[a-zA-Z]+$", RegexOptions.Compiled)
+
 let [<Literal>] private dbdir = "db"
 let [<Literal>] private studentfile = "students.csv"
 let [<Literal>] private studentdb = "students.db"
@@ -46,6 +50,15 @@ let private parseLine (line: string) =
   let arr = line.Split(',')
   arr.[0].Split(' ') |> Seq.last |> (fun s -> s.ToLower ()),
   arr.[1]
+
+let private mkStudent (lastname : string, sid : string) =
+  let mutable errorMsg = ""
+  let ckName = (if rxLastName.IsMatch lastname then Some lastname
+    else errorMsg <- errorMsg + sprintf "invalid name: %s. " lastname; None)
+  let ckSID = (if rxSID.IsMatch sid then Some sid
+    else errorMsg <- errorMsg + sprintf "invalid ID: %s. " sid; None)
+  Option.map2 (fun sid lastname -> sid, { SID = sid; LastName = lastname }) ckName ckSID
+    |> Option.orElse (printf "! Skipping student [%s] due to %s\n" sid errorMsg; None)
 
 let private initDBDir () =
   if Directory.Exists dbdir then ()
@@ -62,8 +75,10 @@ let private initStudents () =
     failwith "Cannot load: students.csv doesn't exist."
   dir |> File.ReadLines
   |> Seq.fold (fun m line ->
-               let lastname, sid = parseLine line
-               Map.add sid { SID = sid; LastName = lastname } m) Map.empty
+               match parseLine line |> mkStudent with
+                | Some (sid, student) -> Map.add sid student m
+                | None -> 
+                  m) Map.empty
 
 let init stime libfile testfile checker =
   initDBDir ()
