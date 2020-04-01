@@ -77,8 +77,7 @@ let private initStudents () =
   |> Seq.fold (fun m line ->
                match parseLine line |> mkStudent with
                 | Some (sid, student) -> Map.add sid student m
-                | None -> 
-                  m) Map.empty
+                | None -> m) Map.empty
 
 let init stime libfile testfile checker =
   initDBDir ()
