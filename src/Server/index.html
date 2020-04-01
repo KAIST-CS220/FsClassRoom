@@ -36,6 +36,9 @@
         function _trim(obj) {
             obj.val(obj.val().trim());
         }
+        function _remove_zws(obj) {
+            obj.val(obj.val().replace(/[\u200B-\u200D\uFEFF]/g, '');
+        }
         function _validate() {
             let _sid = $("#sid").val();
             let _code = $("#code").val().split("\\").pop();
@@ -44,7 +47,7 @@
                 alert("Wrong student id");
                 return -1;
             }
-            if(_code.toLowerCase !== "myfunc.fs") {
+            if(_code.toLowerCase() !== "myfunc.fs") {
                 if(confirm(`You're trying to submit ${_code}\nAre you sure?`)) {
                     return 0;
                 } else {
@@ -54,9 +57,9 @@
             return 0;
         }
         function _submit() {
-            _trim($("#sid"));
-            _trim($("#lastname"));
-            _trim($("#token"));
+            _remove_zws(_trim($("#sid")));
+            _remove_zws(_trim($("#lastname")));
+            _remove_zws(_trim($("#token")));
 
             if(!$("#sid").val() || !$("#lastname").val() || !$("#token").val() || !$("#code").val()){
                 alert("There are missing fields!");
