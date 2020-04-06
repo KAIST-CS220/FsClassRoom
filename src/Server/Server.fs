@@ -83,9 +83,10 @@ let submit ctxt (req: HttpRequest) =
   cond (req.fieldData "sid") (fun sid ->
     cond (req.fieldData "lastname") (fun lastname ->
       cond (req.fieldData "token") (fun token ->
+        let trim (str : String) = str.Trim [| ' '; '\u200B'; '\u200C'; '\u200D'; '\uFEFF' |]
         let files = req.files
-        let lastname = lastname.ToLower ()
-        let token = token.Trim ()
+        let lastname = lastname.ToLower () |> trim
+        let token = token |> trim
         if files.Length = 0 then never
         else handleSubmission ctxt sid lastname token (files.[0].tempFilePath)
       ) never
