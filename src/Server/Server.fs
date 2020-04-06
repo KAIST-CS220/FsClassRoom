@@ -83,7 +83,8 @@ let submit ctxt (req: HttpRequest) =
   cond (req.fieldData "sid") (fun sid ->
     cond (req.fieldData "lastname") (fun lastname ->
       cond (req.fieldData "token") (fun token ->
-        let trim (str : String) = str.Trim [| ' '; '\u200B'; '\u200C'; '\u200D'; '\uFEFF' |]
+        let trim (str : String) =
+          str.Trim [| ' '; '\u200B'; '\u200C'; '\u200D'; '\uFEFF' |]
         let files = req.files
         let sid = sid |> trim
         let lastname = lastname.ToLower () |> trim
@@ -94,9 +95,16 @@ let submit ctxt (req: HttpRequest) =
     ) never
   ) never
 
+let showScore (ctxt: DB.Context) (_: HttpRequest) =
+  ctxt.Submissions
+  |> Seq.fold (fun acc (KeyValue (_, v)) ->
+    acc + v.Submitter.SID.ToString () + ": " + v.Score.ToString ("F")) ""
+  |> OK
+
 let app ctxt =
   choose
-    [ GET >=> choose [ path "/" >=> OK index ]
+    [ GET >=> choose [ path "/" >=> OK index
+                       path "/score/" >=> request (showScore ctxt) ]
       POST >=> choose [ path "/submit" >=> request (submit ctxt) ]
       NOT_FOUND "Stay away! Don't play with the system.\n" ]
 
