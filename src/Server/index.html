@@ -33,11 +33,15 @@
     </form>
     <script src="http://code.jquery.com/jquery-latest.js"></script>
     <script>
+        function _sanitize(obj) {
+            _trim(obj);
+            _remove_zws(obj);
+        }
         function _trim(obj) {
             obj.val(obj.val().trim());
         }
         function _remove_zws(obj) {
-            obj.val(obj.val().replace(/[\u200B-\u200D\uFEFF]/g, '');
+            obj.val(obj.val().replace(/[\u200B-\u200D\uFEFF]/g, ''));
         }
         function _validate() {
             let _sid = $("#sid").val();
@@ -57,9 +61,9 @@
             return 0;
         }
         function _submit() {
-            _remove_zws(_trim($("#sid")));
-            _remove_zws(_trim($("#lastname")));
-            _remove_zws(_trim($("#token")));
+            _sanitize($("#sid"));
+            _sanitize($("#lastname"));
+            _sanitize($("#token"));
 
             if(!$("#sid").val() || !$("#lastname").val() || !$("#token").val() || !$("#code").val()){
                 alert("There are missing fields!");
