@@ -85,6 +85,7 @@ let submit ctxt (req: HttpRequest) =
       cond (req.fieldData "token") (fun token ->
         let files = req.files
         let lastname = lastname.ToLower ()
+        let token = token.Trim ()
         if files.Length = 0 then never
         else handleSubmission ctxt sid lastname token (files.[0].tempFilePath)
       ) never
