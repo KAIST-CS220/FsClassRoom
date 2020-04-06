@@ -85,6 +85,7 @@ let submit ctxt (req: HttpRequest) =
       cond (req.fieldData "token") (fun token ->
         let trim (str : String) = str.Trim [| ' '; '\u200B'; '\u200C'; '\u200D'; '\uFEFF' |]
         let files = req.files
+        let sid = sid |> trim
         let lastname = lastname.ToLower () |> trim
         let token = token |> trim
         if files.Length = 0 then never
