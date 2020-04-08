@@ -98,7 +98,7 @@ let submit ctxt (req: HttpRequest) =
 let showScore (ctxt: DB.Context) (_: HttpRequest) =
   ctxt.Submissions
   |> Seq.fold (fun acc (KeyValue (_, v)) ->
-    acc + v.Submitter.SID.ToString () + ": " + v.Score.ToString ("F")) ""
+    acc + v.Submitter.SID.ToString () + ": " + v.Score.ToString ("F") + "\n") ""
   |> OK
 
 let app ctxt =
